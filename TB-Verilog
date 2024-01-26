@@ -1,0 +1,85 @@
+module asyn_fifo_tb;
+  
+parameter DSIZE = 8;
+parameter ASIZE = 4;
+  
+wire [DSIZE-1:0] rdata;
+wire wfull;
+wire rempty;
+reg [DSIZE-1:0] wdata;
+reg winc, wclk, wrst_n;
+reg rinc, rclk, rrst_n;
+  
+
+parameter MEMDEPTH = 1<<ASIZE;
+reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];  
+  
+ // Instantiate your fifo1 module
+  fifo1 as_fifo (
+    .wclk(wclk),
+    .wrst_n(wrst_n),
+    .rclk(rclk),
+    .rrst_n(rrst_n),
+    .winc(winc),
+    .rinc(rinc),
+    .wdata(wdata),
+    .rdata(rdata),
+    .wfull(wfull),
+    .rempty(rempty)
+  );
+  
+ // Clock generation
+  always #10 wclk = ~wclk;
+  always #35 rclk = ~rclk;
+  always #500 rrst_n = ~rrst_n;
+  //always #600 winc = ~winc;
+  //always #600 rinc = ~rinc;
+  
+  
+ initial begin
+    wclk = 1'b0;
+    wrst_n = 1'b1;
+    winc = 1'b0;
+    wdata = 0;
+   
+ // Wait for some cycles before releasing reset
+   repeat (15) begin
+     @(posedge wclk ) begin //or negedge wrst_n
+         if (!wfull)
+           wdata = $random;
+       
+     end
+     #50;
+   end
+ end
+ 
+
+initial begin
+  rclk = 1'b0;
+  rrst_n = 1'b1;
+  rinc = 1'b0; 
+ #300;   
+ // Wait for some cycles before releasing reset
+  repeat (20) begin 
+    @(posedge rclk) begin
+        if (!rempty) begin
+          if (rdata !== wdata) begin
+            $error("Time = %0t: Comparison Failed: expected wr_data = %h, rd_data = %h", $time, wdata, rdata);
+          end
+          else begin
+            $display("Time = %0t: Comparison Passed: wr_data = %h and rd_data = %h", $time, wdata, rdata);
+          end
+        end
+      
+    end
+   #50;
+  end
+  $finish;
+ end
+      
+  initial begin 
+    $dumpfile("dump.vcd"); 
+    $dumpvars;
+  end
+
+endmodule
