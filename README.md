@@ -2,13 +2,11 @@
 
 ## Aim
 - Verilog Based Verification of Each IP Block
-- System Verilog Based Testbench Verification
 
-## Additional Material and acknowledgements
-- The project was done under the mentorship of Mr. M. Sengupta, our mentor from NXP.
-- Thanks to NXP for providing this opportunity and also to my teammates for the late night discussions and debugging meets.
-- The project report and Project presentation can be found here [Report](https://drive.google.com/file/d/1WExPD3SNqT6sZVq3Q-bRalXBiCAEeUjJ/view?usp=sharing) 
-- This project was done as a Mini Project; a part of the NXP Women In Tech Program (you can get more information about the program here [NXP-WIT](https://wit.nxp.com/)
+ a single “2 FF synchronizer” can resolve metastability for only one bit. Hence, depending on write and read pointers multiple 2FF synchronizers are required. 
+gray code is assured to have only a single bit change from its previous value. Hence, both write and read pointers need to convert first to their equivalent gray code in their corresponding domain and then pass them to an opposite domain. 
 
+data = 8 bits
+address = 4 bits 
 
 
