@@ -1,81 +1,78 @@
 `timescale 1ns/1ps
 
-module asyn_fifo_tb();
-  
-parameter DATA = 8;
-parameter ADDBITS = 4;
-parameter DEPTH = 1 << ADDBITS; 
-  
-wire [DATA-1:0] rdata;
-wire wfull;
-wire rempty;
-reg [DATA-1:0] wdata;
-reg winc, wclk, wrst;
-reg rinc, rclk, rrst;
-  
- // Instantiate your fifo module
-  fifo_top #(ADDBITS, DATA) fifo_inst(
-    .wclk(wclk),
-    .wrst(wrst),
-    .rclk(rclk),
-    .rrst(rrst),
-    .winc(winc),
-    .rinc(rinc),
-    .wdata(wdata),
-    .rdata(rdata),
-    .wfull(wfull),
-    .rempty(rempty)
-  );
-  
- // Clock generation
-  always #10 wclk = ~wclk;
-  always #35 rclk = ~rclk;
-  always #500 rrst = ~rrst;
-  //always #600 winc = ~winc;
-  //always #600 rinc = ~rinc;
-  
-  
- initial begin
-    wclk = 1'b0;
-    wrst = 1'b1;
-    winc = 1'b0;
-    wdata = 0;
-   
- // Wait for some cycles before releasing reset
-   repeat (15) begin
-     @(posedge wclk ) begin 
-         if (!wfull)
-           wdata = $random;
-       
-     end
-     #50;
-   end
- end
- 
+module my_fifo_tb();
 
-initial begin
-  rclk = 1'b0;
-  rrst = 1'b1;
-  rinc = 1'b0; 
- #300;   
- // Wait for some cycles before releasing reset
-  repeat (20) begin 
-    @(posedge rclk) begin
-        if (!rempty) begin
-          if (rdata !== wdata) begin
-            $error("Time = %0t: Comparison Failed: expected wr_data = %h, rd_data = %h", $time, wdata, rdata);
+    parameter DATA = 8; 
+    parameter ADDBITS = 4; 
+    parameter DEPTH = 1 << ADDBITS;
+  
+    reg [DATA-1:0] wdata;
+    reg winc, rinc, wclk, rclk, wrst, rrst; 
+    wire [DATA-1:0] rdata;  
+    wire wfull, rempty;      
+
+  fifo_top #(ADDBITS, DATA) fifo (
+        .rdata(rdata), 
+        .wdata(wdata),
+        .wfull(wfull),
+        .rempty(rempty),
+        .winc(winc), 
+        .rinc(rinc), 
+        .wclk(wclk), 
+        .rclk(rclk), 
+        .wrst(wrst), 
+        .rrst(rrst)
+    );
+
+    integer seed = 1;
+
+    always #5 wclk = ~wclk;    
+    always #10 rclk = ~rclk;   
+    
+    initial begin
+        wclk = 0;
+        rclk = 0;
+        wrst = 0;     
+        rrst = 0;     
+        winc = 0;
+        rinc = 0;
+        wdata = 10;
+
+        #40 wrst = 1; rrst = 1; //FIFO will now bw ON - active low reset
+
+        //TEST CASE 1: Write data and read it back
+        rinc = 1;
+        winc = 1;
+        repeat (2) begin
+          repeat (5) begin
+            wdata = $unsigned($random(seed)) % 256;
+            #10;
           end
-          else begin
-            $display("Time = %0t: Comparison Passed: wr_data = %h and rd_data = %h", $time, wdata, rdata);
+          winc = 0;
+        end 
+//only the first 5 values of wdata are read and the rest are not as winc = 0 after 5 repeats
+
+        //TEST CASE 2: Write data to make FIFO full and try to write more data
+          rinc = 0;
+          winc = 1;
+          repeat (25) begin
+              wdata = $random(seed) % 256;
+              #10;
           end
+//repeating 25 times ensures that the FIFO is full (value more than the DEPTH), wfull = 1
+
+        //TEST CASE 3: Read data from empty FIFO and try to read more data
+        winc = 0;
+        rinc = 1;
+        repeat(20) begin
+            #20;
         end
-      
+//for an empty FIFO, rempty = 1 thus rdata remains as xx
+
+        #70
+        $finish;
     end
-   #50;
-  end
-  $finish;
- end
-      
+  
   initial begin 
     $dumpfile("dump.vcd"); 
     $dumpvars;
