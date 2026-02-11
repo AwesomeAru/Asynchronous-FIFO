@@ -1,25 +1,24 @@
-module asyn_fifo_tb;
+`timescale 1ns/1ps
+
+module asyn_fifo_tb();
   
-parameter DSIZE = 8;
-parameter ASIZE = 4;
+parameter DATA = 8;
+parameter ADDBITS = 4;
+parameter DEPTH = 1 << ADDBITS; 
   
-wire [DSIZE-1:0] rdata;
+wire [DATA-1:0] rdata;
 wire wfull;
 wire rempty;
-reg [DSIZE-1:0] wdata;
-reg winc, wclk, wrst_n;
-reg rinc, rclk, rrst_n;
+reg [DATA-1:0] wdata;
+reg winc, wclk, wrst;
+reg rinc, rclk, rrst;
   
-
-parameter MEMDEPTH = 1<<ASIZE;
-reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];  
-  
- // Instantiate your fifo1 module
-  fifo1 as_fifo (
+ // Instantiate your fifo module
+  fifo_top #(ADDBITS, DATA) fifo_inst(
     .wclk(wclk),
-    .wrst_n(wrst_n),
+    .wrst(wrst),
     .rclk(rclk),
-    .rrst_n(rrst_n),
+    .rrst(rrst),
     .winc(winc),
     .rinc(rinc),
     .wdata(wdata),
@@ -31,20 +30,20 @@ reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];
  // Clock generation
   always #10 wclk = ~wclk;
   always #35 rclk = ~rclk;
-  always #500 rrst_n = ~rrst_n;
+  always #500 rrst = ~rrst;
   //always #600 winc = ~winc;
   //always #600 rinc = ~rinc;
   
   
  initial begin
     wclk = 1'b0;
-    wrst_n = 1'b1;
+    wrst = 1'b1;
     winc = 1'b0;
     wdata = 0;
    
  // Wait for some cycles before releasing reset
    repeat (15) begin
-     @(posedge wclk ) begin //or negedge wrst_n
+     @(posedge wclk ) begin 
          if (!wfull)
            wdata = $random;
        
@@ -56,7 +55,7 @@ reg [DSIZE-1:0] ex_mem [0:MEMDEPTH-1];
 
 initial begin
   rclk = 1'b0;
-  rrst_n = 1'b1;
+  rrst = 1'b1;
   rinc = 1'b0; 
  #300;   
  // Wait for some cycles before releasing reset
